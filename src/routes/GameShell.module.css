@@ -1,0 +1,36 @@
+.room {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  color: var(--red);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding-top: var(--space-6);
+  border-top: var(--hairline);
+  margin-top: var(--space-6);
+}
+
+.stepper button {
+  background: transparent;
+  border: var(--hairline);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: var(--space-2) var(--space-3);
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
