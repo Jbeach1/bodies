@@ -9,7 +9,7 @@ export function validateStart(roster, settings) {
   const blacklist = settings?.blacklistedFromKiller ?? []
   const poolSize = roster.filter((p) => !blacklist.includes(p.id)).length
 
-  if (n < 4) return 'Need at least 4 players.'
+  if (n < 3) return 'Need at least 3 players.'
   if (killerCount < 1) return 'Need at least 1 killer.'
   if (killerCount >= n - killerCount) return 'Too many killers for this many players.'
   if (poolSize < killerCount) return 'Blacklist leaves too few eligible killers.'

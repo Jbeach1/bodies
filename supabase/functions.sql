@@ -215,8 +215,8 @@ begin
     from public.players
     where game_id = p_game_id and not (id = any(v_blacklist));
 
-  if v_player_count < 4 then
-    raise exception 'need at least 4 players' using errcode = 'check_violation';
+  if v_player_count < 3 then
+    raise exception 'need at least 3 players' using errcode = 'check_violation';
   end if;
   if v_killer_count >= (v_player_count - v_killer_count) then
     raise exception 'killerCount must stay below parity' using errcode = 'check_violation';
