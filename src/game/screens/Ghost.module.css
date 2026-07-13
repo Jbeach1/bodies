@@ -1,4 +1,4 @@
-.gameOver {
+.ghost {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -8,24 +8,15 @@
   font-family: var(--font-mono);
   font-size: 0.9rem;
   letter-spacing: 0.28em;
+  color: var(--dead);
+  text-align: center;
+}
+
+.hint {
+  text-align: center;
   color: var(--text-muted);
-  text-align: center;
-}
-
-.winner {
-  text-align: center;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 1.8rem;
-  color: var(--red);
-  margin: 0;
-}
-
-.error {
-  margin: 0;
-  color: var(--red);
   font-size: 0.85rem;
-  text-align: center;
+  margin: 0;
 }
 
 .rosterHead {
@@ -82,4 +73,22 @@
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   color: var(--text-muted);
+}
+
+.tallyBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.tally {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  padding: var(--space-2) 0;
 }

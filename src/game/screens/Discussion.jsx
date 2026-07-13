@@ -108,6 +108,7 @@ export default function Discussion({ game, roster, me }) {
             <li key={p.id} className={`${styles.player} ${!p.is_alive ? styles.dead : ''}`}>
               <span className={styles.pname}>
                 {p.name}
+                {!p.is_alive && <span className={styles.statusBadge}> ▪ CASE CLOSED</span>}
                 {p.is_alive && p.spared_this_discussion && (
                   <span className={styles.immune}> IMMUNE</span>
                 )}

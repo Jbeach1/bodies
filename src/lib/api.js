@@ -205,6 +205,21 @@ export async function playAgain(gameId) {
   if (error) throw error
 }
 
+/** Host correction toolkit: flip a player's alive status, re-runs the win-check. */
+export async function toggleAlive(gameId, playerId) {
+  const { error } = await supabase.rpc('toggle_alive', {
+    p_game_id: gameId,
+    p_player_id: playerId,
+  })
+  if (error) throw error
+}
+
+/** Host correction toolkit: discard the current vote + ballots, back to discussion. */
+export async function cancelVote(gameId) {
+  const { error } = await supabase.rpc('cancel_vote', { p_game_id: gameId })
+  if (error) throw error
+}
+
 /**
  * Subscribe to a room's live state: the `games` row (phase/settings/winner) and
  * its `players` roster. Calls onGame(row) and onPlayersChange() on any change.
