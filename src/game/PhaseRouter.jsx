@@ -4,6 +4,7 @@ import RoleReveal from './screens/RoleReveal'
 import Playing from './screens/Playing'
 import Discussion from './screens/Discussion'
 import Voting from './screens/Voting'
+import GameOver from './screens/GameOver'
 import styles from './PhaseRouter.module.css'
 
 /**
@@ -30,7 +31,7 @@ const SCREENS = {
   [PHASES.PLAYING]: Playing,
   [PHASES.DISCUSSION]: Discussion,
   [PHASES.VOTING]: Voting,
-  [PHASES.GAME_OVER]: Placeholder,
+  [PHASES.GAME_OVER]: GameOver,
 }
 
 export default function PhaseRouter({ game, roster, me }) {

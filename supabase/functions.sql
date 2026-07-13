@@ -639,6 +639,40 @@ begin
   update public.games set phase = 'playing' where id = p_game_id;
 end $$;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- play_again: host NEW CASE, game_over → lobby (PRD §8.10). Resets roles,
+-- alive status, and discussion immunity; clears trial state; keeps the room
+-- code and device_sessions so the same group replays without re-scanning.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.play_again(p_game_id uuid)
+returns void language plpgsql
+security definer set search_path = public as $$
+declare
+  v_phase text;
+begin
+  select phase into v_phase from public.games where id = p_game_id for update;
+
+  if v_phase is null then
+    raise exception 'game not found';
+  end if;
+  if v_phase <> 'game_over' then
+    raise exception 'can only play again after game over' using errcode = 'check_violation';
+  end if;
+
+  delete from public.ballots
+  where vote_id in (select id from public.votes where game_id = p_game_id);
+  delete from public.votes where game_id = p_game_id;
+  delete from public.accusations where game_id = p_game_id;
+
+  update public.players
+  set role = null, role_confirmed = false, is_alive = true, spared_this_discussion = false
+  where game_id = p_game_id;
+
+  update public.games
+  set phase = 'lobby', winner = null, current_vote_id = null
+  where id = p_game_id;
+end $$;
+
 grant execute on function
   public.now_utc(),
   public.gen_room_code(),
@@ -656,5 +690,6 @@ grant execute on function
   public.dismiss_accusation(uuid),
   public.cast_ballot(uuid, uuid, text),
   public.resolve_vote(uuid),
-  public.resume_play(uuid)
+  public.resume_play(uuid),
+  public.play_again(uuid)
 to anon, authenticated;
