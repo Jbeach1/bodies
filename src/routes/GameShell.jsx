@@ -1,8 +1,10 @@
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Navigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import PhaseRouter from '../game/PhaseRouter'
 import Ghost from '../game/screens/Ghost'
 import HostPanel from '../game/HostPanel'
+import Beat from '../game/Beat'
 import { useGame } from '../game/useGame'
 import { PHASE_LABEL } from '../game/phases'
 import styles from './GameShell.module.css'
@@ -19,6 +21,28 @@ const GHOST_PHASES = new Set(['playing', 'discussion', 'voting'])
 export default function GameShell() {
   const { roomCode } = useParams()
   const { status, game, roster, me, error } = useGame(roomCode)
+
+  const prevPhaseRef = useRef(undefined)
+  const [beat, setBeat] = useState(null)
+
+  // Dramatic beats (PRD §9.4) fire on specific phase transitions; everything
+  // else is a calm fade (PhaseRouter.module.css).
+  useEffect(() => {
+    if (!game) return
+    const prev = prevPhaseRef.current
+    if (prev && prev !== game.phase) {
+      if (game.phase === 'game_over') {
+        setBeat(game.winner === 'town' ? '> TOWN WINS' : '> KILLERS WIN')
+      } else if (game.phase === 'role_reveal') {
+        setBeat('> ROLES ASSIGNED')
+      } else if (prev === 'playing' && game.phase === 'discussion') {
+        setBeat('> BODY DISCOVERED')
+      } else if (prev === 'voting' && game.phase === 'playing') {
+        setBeat('> ELIMINATED')
+      }
+    }
+    prevPhaseRef.current = game.phase
+  }, [game?.phase, game?.winner])
 
   if (status === 'loading') {
     return (
@@ -60,6 +84,7 @@ export default function GameShell() {
 
   return (
     <Layout header={header}>
+      {beat && <Beat text={beat} onDone={() => setBeat(null)} />}
       {showGhost ? (
         <Ghost game={game} roster={roster} me={me} />
       ) : (

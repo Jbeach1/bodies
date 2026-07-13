@@ -37,5 +37,10 @@ const SCREENS = {
 export default function PhaseRouter({ game, roster, me }) {
   const phase = game?.phase ?? PHASES.LOBBY
   const Screen = SCREENS[phase] ?? Placeholder
-  return <Screen phase={phase} game={game} roster={roster} me={me} />
+  return (
+    // Fast, calm fade on phase change (PRD §9.4) — dramatic beats live in Beat.jsx.
+    <div key={phase} className={styles.fade}>
+      <Screen phase={phase} game={game} roster={roster} me={me} />
+    </div>
+  )
 }

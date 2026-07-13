@@ -34,7 +34,10 @@ export default function GameOver({ game, roster, me }) {
       <ul className={styles.roster}>
         {roster.map((p) => (
           <li key={p.id} className={`${styles.player} ${!p.is_alive ? styles.dead : ''}`}>
-            <span className={styles.pname}>{p.name}</span>
+            <span className={styles.pname}>
+              {p.name}
+              {!p.is_alive && <span className={styles.statusBadge}> ▪ CASE CLOSED</span>}
+            </span>
             <span className={p.role === 'killer' ? styles.roleKiller : styles.roleTown}>
               {p.role === 'killer' ? 'KILLER' : 'CIVILIAN'}
             </span>

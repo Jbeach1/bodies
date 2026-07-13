@@ -50,7 +50,10 @@ export default function HostPanel({ game, roster, me }) {
       <ul className={styles.roster}>
         {roster.map((p) => (
           <li key={p.id} className={styles.player}>
-            <span className={p.is_alive ? '' : styles.dead}>{p.name}</span>
+            <span className={p.is_alive ? '' : styles.dead}>
+              {p.name}
+              {!p.is_alive && ' ▪ CASE CLOSED'}
+            </span>
             <button
               type="button"
               className={styles.chip}

@@ -116,3 +116,9 @@
   font-size: 0.7rem;
   letter-spacing: 0.08em;
 }
+
+.statusBadge {
+  color: var(--dead);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}

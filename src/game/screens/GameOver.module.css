@@ -64,6 +64,12 @@
   font-size: 0.95rem;
 }
 
+.statusBadge {
+  color: var(--dead);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
 .roleKiller {
   font-family: var(--font-mono);
   font-size: 0.75rem;
