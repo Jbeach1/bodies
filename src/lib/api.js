@@ -199,6 +199,12 @@ export async function fetchBallots(voteId) {
   return data
 }
 
+/** Host NEW CASE: resets roles/alive/trial state, game_over → lobby. */
+export async function playAgain(gameId) {
+  const { error } = await supabase.rpc('play_again', { p_game_id: gameId })
+  if (error) throw error
+}
+
 /**
  * Subscribe to a room's live state: the `games` row (phase/settings/winner) and
  * its `players` roster. Calls onGame(row) and onPlayersChange() on any change.

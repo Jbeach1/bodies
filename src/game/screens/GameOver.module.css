@@ -1,0 +1,79 @@
+.gameOver {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.winner {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.8rem;
+  color: var(--red);
+  margin: 0;
+}
+
+.error {
+  margin: 0;
+  color: var(--red);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.rosterHead {
+  border-bottom: var(--hairline);
+  padding-bottom: var(--space-2);
+}
+
+.rosterTitle {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  color: var(--text-muted);
+}
+
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-1);
+  border-bottom: var(--hairline);
+}
+
+.player.dead {
+  color: var(--dead);
+}
+
+.pname {
+  font-size: 0.95rem;
+}
+
+.roleKiller {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--red);
+}
+
+.roleTown {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
