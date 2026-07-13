@@ -1,0 +1,88 @@
+.ghost {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.28em;
+  color: var(--dead);
+  text-align: center;
+}
+
+.hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.rosterHead {
+  border-bottom: var(--hairline);
+  padding-bottom: var(--space-2);
+}
+
+.rosterTitle {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  color: var(--text-muted);
+}
+
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-1);
+  border-bottom: var(--hairline);
+}
+
+.player.dead {
+  color: var(--dead);
+}
+
+.pname {
+  font-size: 0.95rem;
+}
+
+.roleKiller {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--red);
+}
+
+.roleTown {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.tallyBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.tally {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  padding: var(--space-2) 0;
+}

@@ -673,6 +673,66 @@ begin
   where id = p_game_id;
 end $$;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- toggle_alive: host correction toolkit (PRD §5.5). Flips a player's alive
+-- status and re-runs the win-check once roles are in play. Available
+-- regardless of the host's own alive status (no host check here — the client
+-- only shows the panel to the host player, same trust model as every other
+-- RPC in this schema).
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.toggle_alive(p_game_id uuid, p_player_id uuid)
+returns void language plpgsql
+security definer set search_path = public as $$
+declare
+  v_phase text;
+  v_living_killers int;
+  v_living_town int;
+begin
+  select phase into v_phase from public.games where id = p_game_id for update;
+  if v_phase is null then
+    raise exception 'game not found';
+  end if;
+
+  update public.players set is_alive = not is_alive
+  where id = p_player_id and game_id = p_game_id;
+
+  if v_phase not in ('lobby', 'role_reveal') then
+    select count(*) filter (where role = 'killer'), count(*) filter (where role <> 'killer')
+      into v_living_killers, v_living_town
+    from public.players
+    where game_id = p_game_id and is_alive;
+
+    if v_living_killers = 0 then
+      update public.games set phase = 'game_over', winner = 'town' where id = p_game_id;
+    elsif v_living_killers >= v_living_town then
+      update public.games set phase = 'game_over', winner = 'killers' where id = p_game_id;
+    end if;
+  end if;
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- cancel_vote: host correction toolkit. Discards the current vote + its
+-- ballots and returns to discussion.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.cancel_vote(p_game_id uuid)
+returns void language plpgsql
+security definer set search_path = public as $$
+declare
+  v_vote_id uuid;
+begin
+  select current_vote_id into v_vote_id from public.games where id = p_game_id for update;
+  if v_vote_id is null then
+    raise exception 'no active vote' using errcode = 'check_violation';
+  end if;
+
+  delete from public.ballots where vote_id = v_vote_id;
+  update public.votes set status = 'cancelled' where id = v_vote_id;
+  update public.accusations set status = 'cleared'
+    where id = (select accusation_id from public.votes where id = v_vote_id);
+
+  update public.games set phase = 'discussion', current_vote_id = null where id = p_game_id;
+end $$;
+
 grant execute on function
   public.now_utc(),
   public.gen_room_code(),
@@ -691,5 +751,7 @@ grant execute on function
   public.cast_ballot(uuid, uuid, text),
   public.resolve_vote(uuid),
   public.resume_play(uuid),
-  public.play_again(uuid)
+  public.play_again(uuid),
+  public.toggle_alive(uuid, uuid),
+  public.cancel_vote(uuid)
 to anon, authenticated;
