@@ -120,7 +120,7 @@ begin
   end if;
 
   select coalesce(max(join_order), 0) + 1 into v_next_order
-  from public.players where game_id = v_game_id;
+  from public.players where players.game_id = v_game_id;
 
   insert into public.players (game_id, name, join_order)
   values (v_game_id, trim(player_name), v_next_order)
