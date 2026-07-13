@@ -333,6 +333,312 @@ begin
   return query select v_next_phase, v_winner;
 end $$;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- log_accusation: any living player accuses a living, non-immune, non-self
+-- target (PRD §5.2). Multiple pending accusations coexist.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.log_accusation(
+  p_game_id uuid,
+  p_accuser_id uuid,
+  p_accused_id uuid
+)
+returns uuid language plpgsql
+security definer set search_path = public as $$
+declare
+  v_phase text;
+  v_accuser_alive boolean;
+  v_accused_alive boolean;
+  v_accused_immune boolean;
+  v_id uuid;
+begin
+  select phase into v_phase from public.games where id = p_game_id;
+  if v_phase is distinct from 'discussion' then
+    raise exception 'accusations are only open during discussion' using errcode = 'check_violation';
+  end if;
+  if p_accuser_id = p_accused_id then
+    raise exception 'cannot accuse yourself' using errcode = 'check_violation';
+  end if;
+
+  select is_alive into v_accuser_alive
+    from public.players where id = p_accuser_id and game_id = p_game_id;
+  select is_alive, spared_this_discussion into v_accused_alive, v_accused_immune
+    from public.players where id = p_accused_id and game_id = p_game_id;
+
+  if v_accuser_alive is not true then
+    raise exception 'only living players may accuse' using errcode = 'check_violation';
+  end if;
+  if v_accused_alive is not true then
+    raise exception 'target must be living' using errcode = 'check_violation';
+  end if;
+  if v_accused_immune then
+    raise exception 'target is immune this discussion' using errcode = 'check_violation';
+  end if;
+
+  insert into public.accusations (game_id, accuser_id, accused_id)
+  values (p_game_id, p_accuser_id, p_accused_id)
+  returning id into v_id;
+
+  return v_id;
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- corroborate_accusation: first second promotes the accusation to the floor
+-- (opens a vote, discussion → voting) and clears every other pending
+-- accusation in the game. `for update` makes the "first" race-safe.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.corroborate_accusation(
+  p_accusation_id uuid,
+  p_seconder_id uuid
+)
+returns void language plpgsql
+security definer set search_path = public as $$
+declare
+  v_game_id uuid;
+  v_accuser_id uuid;
+  v_accused_id uuid;
+  v_status text;
+  v_seconder_alive boolean;
+  v_vote_id uuid;
+begin
+  select game_id, accuser_id, accused_id, status
+    into v_game_id, v_accuser_id, v_accused_id, v_status
+  from public.accusations where id = p_accusation_id
+  for update;
+
+  if v_game_id is null then
+    raise exception 'accusation not found';
+  end if;
+  if v_status <> 'pending' then
+    raise exception 'accusation is no longer pending' using errcode = 'check_violation';
+  end if;
+  if p_seconder_id = v_accuser_id or p_seconder_id = v_accused_id then
+    raise exception 'seconder must be a different living player' using errcode = 'check_violation';
+  end if;
+
+  select is_alive into v_seconder_alive
+    from public.players where id = p_seconder_id and game_id = v_game_id;
+  if v_seconder_alive is not true then
+    raise exception 'only living players may corroborate' using errcode = 'check_violation';
+  end if;
+
+  update public.accusations set status = 'on_floor', seconder_id = p_seconder_id
+  where id = p_accusation_id;
+
+  update public.accusations set status = 'cleared'
+  where game_id = v_game_id and status = 'pending' and id <> p_accusation_id;
+
+  insert into public.votes (game_id, accusation_id, accused_id)
+  values (v_game_id, p_accusation_id, v_accused_id)
+  returning id into v_vote_id;
+
+  update public.games set phase = 'voting', current_vote_id = v_vote_id where id = v_game_id;
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- withdraw_accusation / dismiss_accusation: clear an unseconded accusation
+-- (accuser's own choice, or the host's).
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.withdraw_accusation(p_accusation_id uuid, p_accuser_id uuid)
+returns void language plpgsql
+security definer set search_path = public as $$
+begin
+  update public.accusations
+  set status = 'withdrawn'
+  where id = p_accusation_id and accuser_id = p_accuser_id and status = 'pending';
+
+  if not found then
+    raise exception 'accusation cannot be withdrawn' using errcode = 'check_violation';
+  end if;
+end $$;
+
+create or replace function public.dismiss_accusation(p_accusation_id uuid)
+returns void language plpgsql
+security definer set search_path = public as $$
+begin
+  update public.accusations
+  set status = 'cleared'
+  where id = p_accusation_id and status = 'pending';
+
+  if not found then
+    raise exception 'accusation cannot be dismissed' using errcode = 'check_violation';
+  end if;
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- resolve_vote_core: shared resolution logic (PRD §5.3). p_force=false is the
+-- auto-resolve path after each ballot (only resolves once mathematically
+-- locked); p_force=true is host Resolve Now (missing ballots count as
+-- acquit). Not granted to anon directly — only called from cast_ballot /
+-- resolve_vote, which run as the function owner.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.resolve_vote_core(p_vote_id uuid, p_force boolean)
+returns table (resolved boolean, outcome text, phase text, winner text)
+language plpgsql
+security definer set search_path = public as $$
+declare
+  v_game_id uuid;
+  v_accused_id uuid;
+  v_status text;
+  v_eligible int;
+  v_convict int;
+  v_acquit int;
+  v_remaining int;
+  v_outcome text;
+  v_next_phase text;
+  v_winner text;
+  v_living_killers int;
+  v_living_town int;
+begin
+  select game_id, accused_id, status into v_game_id, v_accused_id, v_status
+  from public.votes where id = p_vote_id for update;
+
+  if v_game_id is null then
+    raise exception 'vote not found';
+  end if;
+  if v_status <> 'open' then
+    return query select false, null::text, null::text, null::text;
+    return;
+  end if;
+
+  select count(*) into v_eligible
+  from public.players
+  where game_id = v_game_id and is_alive and id <> v_accused_id;
+
+  select count(*) filter (where choice = 'convict'),
+         count(*) filter (where choice = 'acquit')
+    into v_convict, v_acquit
+  from public.ballots where vote_id = p_vote_id;
+
+  v_remaining := v_eligible - v_convict - v_acquit;
+
+  if p_force then
+    v_outcome := case when v_convict > v_eligible / 2.0 then 'convict' else 'acquit' end;
+  else
+    if v_convict > v_eligible / 2.0 then
+      v_outcome := 'convict';
+    elsif (v_convict + v_remaining) <= v_eligible / 2.0 then
+      v_outcome := 'acquit';
+    else
+      return query select false, null::text, null::text, null::text;
+      return;
+    end if;
+  end if;
+
+  update public.votes
+  set status = 'resolved', outcome = v_outcome, resolved_at = now()
+  where id = p_vote_id;
+
+  update public.accusations
+  set status = 'resolved'
+  where id = (select accusation_id from public.votes where id = p_vote_id);
+
+  if v_outcome = 'convict' then
+    update public.players set is_alive = false where id = v_accused_id;
+
+    select count(*) filter (where role = 'killer'), count(*) filter (where role <> 'killer')
+      into v_living_killers, v_living_town
+    from public.players
+    where game_id = v_game_id and is_alive;
+
+    if v_living_killers = 0 then
+      v_next_phase := 'game_over';
+      v_winner := 'town';
+    elsif v_living_killers >= v_living_town then
+      v_next_phase := 'game_over';
+      v_winner := 'killers';
+    else
+      v_next_phase := 'playing';
+      v_winner := null;
+    end if;
+
+    update public.players set spared_this_discussion = false where game_id = v_game_id;
+    update public.games
+      set phase = v_next_phase, winner = v_winner, current_vote_id = null
+      where id = v_game_id;
+  else
+    update public.players set spared_this_discussion = true where id = v_accused_id;
+    v_next_phase := 'discussion';
+    v_winner := null;
+    update public.games
+      set phase = 'discussion', current_vote_id = null
+      where id = v_game_id;
+  end if;
+
+  return query select true, v_outcome, v_next_phase, v_winner;
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- cast_ballot: eligible voter casts/changes Convict or Acquit; triggers
+-- auto-resolve once the outcome is mathematically locked.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.cast_ballot(p_vote_id uuid, p_voter_id uuid, p_choice text)
+returns void language plpgsql
+security definer set search_path = public as $$
+declare
+  v_game_id uuid;
+  v_accused_id uuid;
+  v_status text;
+  v_voter_alive boolean;
+begin
+  if p_choice not in ('convict', 'acquit') then
+    raise exception 'invalid choice' using errcode = 'check_violation';
+  end if;
+
+  select game_id, accused_id, status into v_game_id, v_accused_id, v_status
+  from public.votes where id = p_vote_id;
+
+  if v_game_id is null then
+    raise exception 'vote not found';
+  end if;
+  if v_status <> 'open' then
+    raise exception 'vote already resolved' using errcode = 'check_violation';
+  end if;
+  if p_voter_id = v_accused_id then
+    raise exception 'the accused cannot vote' using errcode = 'check_violation';
+  end if;
+
+  select is_alive into v_voter_alive
+    from public.players where id = p_voter_id and game_id = v_game_id;
+  if v_voter_alive is not true then
+    raise exception 'only living players may vote' using errcode = 'check_violation';
+  end if;
+
+  insert into public.ballots (vote_id, voter_id, choice)
+  values (p_vote_id, p_voter_id, p_choice)
+  on conflict (vote_id, voter_id) do update set choice = excluded.choice;
+
+  perform public.resolve_vote_core(p_vote_id, false);
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- resolve_vote: host Resolve Now — missing ballots count as acquit.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.resolve_vote(p_vote_id uuid)
+returns void language plpgsql
+security definer set search_path = public as $$
+begin
+  perform public.resolve_vote_core(p_vote_id, true);
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- resume_play: host safety valve / normal loop exit, discussion → playing.
+-- Clears discussion immunity (PRD: immune "for rest of this discussion").
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.resume_play(p_game_id uuid)
+returns void language plpgsql
+security definer set search_path = public as $$
+declare
+  v_phase text;
+begin
+  select phase into v_phase from public.games where id = p_game_id;
+  if v_phase is distinct from 'discussion' then
+    raise exception 'can only resume from discussion' using errcode = 'check_violation';
+  end if;
+
+  update public.players set spared_this_discussion = false where game_id = p_game_id;
+  update public.games set phase = 'playing' where id = p_game_id;
+end $$;
+
 grant execute on function
   public.now_utc(),
   public.gen_room_code(),
@@ -343,5 +649,12 @@ grant execute on function
   public.assign_roles(uuid),
   public.confirm_role(uuid),
   public.begin_playing(uuid),
-  public.report_body(uuid, uuid[])
+  public.report_body(uuid, uuid[]),
+  public.log_accusation(uuid, uuid, uuid),
+  public.corroborate_accusation(uuid, uuid),
+  public.withdraw_accusation(uuid, uuid),
+  public.dismiss_accusation(uuid),
+  public.cast_ballot(uuid, uuid, text),
+  public.resolve_vote(uuid),
+  public.resume_play(uuid)
 to anon, authenticated;

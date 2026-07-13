@@ -2,6 +2,8 @@ import { PHASES, PHASE_LABEL } from './phases'
 import Lobby from './screens/Lobby'
 import RoleReveal from './screens/RoleReveal'
 import Playing from './screens/Playing'
+import Discussion from './screens/Discussion'
+import Voting from './screens/Voting'
 import styles from './PhaseRouter.module.css'
 
 /**
@@ -26,8 +28,8 @@ const SCREENS = {
   [PHASES.LOBBY]: Lobby,
   [PHASES.ROLE_REVEAL]: RoleReveal,
   [PHASES.PLAYING]: Playing,
-  [PHASES.DISCUSSION]: Placeholder,
-  [PHASES.VOTING]: Placeholder,
+  [PHASES.DISCUSSION]: Discussion,
+  [PHASES.VOTING]: Voting,
   [PHASES.GAME_OVER]: Placeholder,
 }
 

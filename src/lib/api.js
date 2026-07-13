@@ -116,6 +116,89 @@ export async function reportBody(gameId, victimIds) {
   if (error) throw error
 }
 
+/** LOG ACCUSATION: living, non-immune, non-self target. Returns the accusation id. */
+export async function logAccusation(gameId, accuserId, accusedId) {
+  const { data, error } = await supabase.rpc('log_accusation', {
+    p_game_id: gameId,
+    p_accuser_id: accuserId,
+    p_accused_id: accusedId,
+  })
+  if (error) throw error
+  return data
+}
+
+/** CORROBORATE: first second promotes the accusation to a vote and clears the rest. */
+export async function corroborateAccusation(accusationId, seconderId) {
+  const { error } = await supabase.rpc('corroborate_accusation', {
+    p_accusation_id: accusationId,
+    p_seconder_id: seconderId,
+  })
+  if (error) throw error
+}
+
+/** Accuser withdraws their own unseconded accusation. */
+export async function withdrawAccusation(accusationId, accuserId) {
+  const { error } = await supabase.rpc('withdraw_accusation', {
+    p_accusation_id: accusationId,
+    p_accuser_id: accuserId,
+  })
+  if (error) throw error
+}
+
+/** Host dismisses an unseconded accusation. */
+export async function dismissAccusation(accusationId) {
+  const { error } = await supabase.rpc('dismiss_accusation', { p_accusation_id: accusationId })
+  if (error) throw error
+}
+
+/** Pending accusations for a game's discussion screen (realtime keeps this fresh). */
+export async function fetchPendingAccusations(gameId) {
+  const { data, error } = await supabase
+    .from('accusations')
+    .select('*')
+    .eq('game_id', gameId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+/** Host RESUME SURVEILLANCE: discussion → playing, clears discussion immunity. */
+export async function resumePlay(gameId) {
+  const { error } = await supabase.rpc('resume_play', { p_game_id: gameId })
+  if (error) throw error
+}
+
+/** Cast or change a ballot (Convict/Acquit); auto-resolves once locked. */
+export async function castBallot(voteId, voterId, choice) {
+  const { error } = await supabase.rpc('cast_ballot', {
+    p_vote_id: voteId,
+    p_voter_id: voterId,
+    p_choice: choice,
+  })
+  if (error) throw error
+}
+
+/** Host RESOLVE NOW: missing ballots count as acquit. */
+export async function resolveVote(voteId) {
+  const { error } = await supabase.rpc('resolve_vote', { p_vote_id: voteId })
+  if (error) throw error
+}
+
+/** Fetch a vote row by id. */
+export async function fetchVote(voteId) {
+  const { data, error } = await supabase.from('votes').select('*').eq('id', voteId).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/** Ballots cast so far on a vote. */
+export async function fetchBallots(voteId) {
+  const { data, error } = await supabase.from('ballots').select('*').eq('vote_id', voteId)
+  if (error) throw error
+  return data
+}
+
 /**
  * Subscribe to a room's live state: the `games` row (phase/settings/winner) and
  * its `players` roster. Calls onGame(row) and onPlayersChange() on any change.

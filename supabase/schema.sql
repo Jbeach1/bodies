@@ -47,6 +47,40 @@ create table if not exists public.device_sessions (
   unique (player_id, device_uuid)
 );
 
+create table if not exists public.accusations (
+  id            uuid primary key default gen_random_uuid(),
+  game_id       uuid not null references public.games(id) on delete cascade,
+  accuser_id    uuid not null references public.players(id) on delete cascade,
+  accused_id    uuid not null references public.players(id) on delete cascade,
+  seconder_id   uuid references public.players(id) on delete set null,
+  status        text not null default 'pending', -- pending|on_floor|resolved|withdrawn|cleared
+  created_at    timestamptz not null default now()
+);
+
+create table if not exists public.votes (
+  id            uuid primary key default gen_random_uuid(),
+  game_id       uuid not null references public.games(id) on delete cascade,
+  accusation_id uuid not null references public.accusations(id) on delete cascade,
+  accused_id    uuid not null references public.players(id) on delete cascade,
+  status        text not null default 'open', -- open|resolved|cancelled
+  outcome       text,                          -- convict|acquit|null
+  created_at    timestamptz not null default now(),
+  resolved_at   timestamptz
+);
+
+create table if not exists public.ballots (
+  id          uuid primary key default gen_random_uuid(),
+  vote_id     uuid not null references public.votes(id) on delete cascade,
+  voter_id    uuid not null references public.players(id) on delete cascade,
+  choice      text not null,                   -- convict|acquit
+  created_at  timestamptz not null default now(),
+  unique (vote_id, voter_id)
+);
+
+create index if not exists accusations_game_id_idx on public.accusations(game_id);
+create index if not exists votes_game_id_idx on public.votes(game_id);
+create index if not exists ballots_vote_id_idx on public.ballots(vote_id);
+
 -- host_player_id references a player once both tables exist.
 do $$
 begin
@@ -62,6 +96,18 @@ end $$;
 create index if not exists players_game_id_idx on public.players(game_id);
 create index if not exists device_sessions_device_uuid_idx on public.device_sessions(device_uuid);
 create unique index if not exists games_room_code_key on public.games(room_code);
+
+-- current_vote_id references a vote once the votes table exists.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'games_current_vote_id_fkey'
+  ) then
+    alter table public.games
+      add constraint games_current_vote_id_fkey
+      foreign key (current_vote_id) references public.votes(id) on delete set null;
+  end if;
+end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- updated_at bookkeeping (supports the 24h idle TTL cleanup, PRD §7).
@@ -104,6 +150,9 @@ create trigger players_touch_game
 alter table public.games enable row level security;
 alter table public.players enable row level security;
 alter table public.device_sessions enable row level security;
+alter table public.accusations enable row level security;
+alter table public.votes enable row level security;
+alter table public.ballots enable row level security;
 
 drop policy if exists games_read on public.games;
 create policy games_read on public.games for select to anon, authenticated using (true);
@@ -119,6 +168,15 @@ create policy device_sessions_read on public.device_sessions
 drop policy if exists device_sessions_update on public.device_sessions;
 create policy device_sessions_update on public.device_sessions
   for update to anon, authenticated using (true) with check (true);
+
+drop policy if exists accusations_read on public.accusations;
+create policy accusations_read on public.accusations for select to anon, authenticated using (true);
+
+drop policy if exists votes_read on public.votes;
+create policy votes_read on public.votes for select to anon, authenticated using (true);
+
+drop policy if exists ballots_read on public.ballots;
+create policy ballots_read on public.ballots for select to anon, authenticated using (true);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Realtime: publish the room tables so clients get live roster/phase updates.
@@ -137,5 +195,23 @@ begin
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'players'
   ) then
     alter publication supabase_realtime add table public.players;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'accusations'
+  ) then
+    alter publication supabase_realtime add table public.accusations;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'votes'
+  ) then
+    alter publication supabase_realtime add table public.votes;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'ballots'
+  ) then
+    alter publication supabase_realtime add table public.ballots;
   end if;
 end $$;

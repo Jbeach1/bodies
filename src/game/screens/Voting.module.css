@@ -1,0 +1,118 @@
+.voting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.accused {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.error {
+  margin: 0;
+  color: var(--red);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.ballotButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.ballotBtn {
+  padding: var(--space-4);
+  border: var(--hairline);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ballotBtn:disabled {
+  opacity: 0.6;
+}
+
+.convict.chosen {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+.acquit.chosen {
+  border-color: var(--text);
+}
+
+.tally {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-top: var(--hairline);
+  border-bottom: var(--hairline);
+  padding: var(--space-2) 0;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.outstandingList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 0.9rem;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.resolveBtn {
+  width: 100%;
+  padding: var(--space-4);
+  border: var(--hairline);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  color: var(--host);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.resolveBtn:disabled {
+  opacity: 0.5;
+}
