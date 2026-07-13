@@ -1,6 +1,7 @@
 import { PHASES, PHASE_LABEL } from './phases'
 import Lobby from './screens/Lobby'
 import RoleReveal from './screens/RoleReveal'
+import Playing from './screens/Playing'
 import styles from './PhaseRouter.module.css'
 
 /**
@@ -24,7 +25,7 @@ function Placeholder({ phase }) {
 const SCREENS = {
   [PHASES.LOBBY]: Lobby,
   [PHASES.ROLE_REVEAL]: RoleReveal,
-  [PHASES.PLAYING]: Placeholder,
+  [PHASES.PLAYING]: Playing,
   [PHASES.DISCUSSION]: Placeholder,
   [PHASES.VOTING]: Placeholder,
   [PHASES.GAME_OVER]: Placeholder,

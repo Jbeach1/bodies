@@ -267,6 +267,72 @@ begin
   update public.games set phase = 'playing' where id = p_game_id;
 end $$;
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- report_body: host marks 1+ victims dead (PRD §4/§5.4). Resets discussion
+-- immunity for everyone, runs the win-check, and lands on discussion or
+-- game_over. `for update` on the games row serializes concurrent reports.
+-- ─────────────────────────────────────────────────────────────────────────────
+create or replace function public.report_body(p_game_id uuid, p_victim_ids uuid[])
+returns table (phase text, winner text)
+language plpgsql
+security definer set search_path = public as $$
+declare
+  v_phase text;
+  v_valid_count int;
+  v_living_killers int;
+  v_living_town int;
+  v_next_phase text;
+  v_winner text;
+begin
+  select phase into v_phase from public.games where id = p_game_id for update;
+
+  if v_phase is null then
+    raise exception 'game not found';
+  end if;
+  if v_phase <> 'playing' then
+    raise exception 'body can only be reported during play' using errcode = 'check_violation';
+  end if;
+  if p_victim_ids is null or array_length(p_victim_ids, 1) is null then
+    raise exception 'at least one victim is required' using errcode = 'check_violation';
+  end if;
+
+  select count(*) into v_valid_count
+  from public.players
+  where game_id = p_game_id and is_alive and id = any(p_victim_ids);
+
+  if v_valid_count <> cardinality(p_victim_ids) then
+    raise exception 'victims must be living players in this game' using errcode = 'check_violation';
+  end if;
+
+  update public.players
+  set is_alive = false
+  where game_id = p_game_id and id = any(p_victim_ids);
+
+  update public.players
+  set spared_this_discussion = false
+  where game_id = p_game_id;
+
+  select count(*) filter (where role = 'killer'), count(*) filter (where role <> 'killer')
+    into v_living_killers, v_living_town
+  from public.players
+  where game_id = p_game_id and is_alive;
+
+  if v_living_killers = 0 then
+    v_next_phase := 'game_over';
+    v_winner := 'town';
+  elsif v_living_killers >= v_living_town then
+    v_next_phase := 'game_over';
+    v_winner := 'killers';
+  else
+    v_next_phase := 'discussion';
+    v_winner := null;
+  end if;
+
+  update public.games set phase = v_next_phase, winner = v_winner where id = p_game_id;
+
+  return query select v_next_phase, v_winner;
+end $$;
+
 grant execute on function
   public.now_utc(),
   public.gen_room_code(),
@@ -276,5 +342,6 @@ grant execute on function
   public.update_settings(uuid, int, uuid[]),
   public.assign_roles(uuid),
   public.confirm_role(uuid),
-  public.begin_playing(uuid)
+  public.begin_playing(uuid),
+  public.report_body(uuid, uuid[])
 to anon, authenticated;

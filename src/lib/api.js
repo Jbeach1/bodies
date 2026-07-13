@@ -105,6 +105,18 @@ export async function beginPlaying(gameId) {
 }
 
 /**
+ * Host REPORT BODY: marks 1+ victims dead, resets discussion immunity, runs
+ * the win-check, and lands on discussion or game_over.
+ */
+export async function reportBody(gameId, victimIds) {
+  const { error } = await supabase.rpc('report_body', {
+    p_game_id: gameId,
+    p_victim_ids: victimIds,
+  })
+  if (error) throw error
+}
+
+/**
  * Subscribe to a room's live state: the `games` row (phase/settings/winner) and
  * its `players` roster. Calls onGame(row) and onPlayersChange() on any change.
  * Returns an unsubscribe function.
