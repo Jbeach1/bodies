@@ -86,9 +86,9 @@ declare
   v_player_id uuid;
   v_next_order int;
 begin
-  select id, phase into v_game_id, v_phase
-  from public.games
-  where room_code = upper(trim(p_room_code));
+  select g.id, g.phase into v_game_id, v_phase
+  from public.games g
+  where g.room_code = upper(trim(p_room_code));
 
   if v_game_id is null then
     raise exception 'no game with room code %', p_room_code
@@ -104,7 +104,8 @@ begin
 
   if v_player_id is not null then
     update public.device_sessions set last_seen = now()
-    where player_id = v_player_id and device_uuid = join_game.device_uuid;
+    where device_sessions.player_id = v_player_id
+      and device_sessions.device_uuid = join_game.device_uuid;
     return query select v_game_id, v_player_id, v_phase, true;
     return;
   end if;
@@ -284,7 +285,7 @@ declare
   v_next_phase text;
   v_winner text;
 begin
-  select phase into v_phase from public.games where id = p_game_id for update;
+  select g.phase into v_phase from public.games g where g.id = p_game_id for update;
 
   if v_phase is null then
     raise exception 'game not found';
