@@ -1,44 +1,62 @@
-import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Navigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import PhaseRouter from '../game/PhaseRouter'
-import { PHASE_ORDER } from '../game/phases'
+import { useGame } from '../game/useGame'
+import { PHASE_LABEL } from '../game/phases'
 import styles from './GameShell.module.css'
 
 /**
- * The in-game shell. Later slices drive `phase` from the live `games` row via
- * a Supabase realtime subscription; for the scaffold it's local state with a
- * dev stepper so the phase-switch structure is demonstrable end-to-end.
+ * In-game shell for /game/:roomCode. Resolves membership + live game state via
+ * useGame, then renders the phase-appropriate screen. Reconnect (reload) lands
+ * straight back here; an unbound device is bounced to Join with the code prefilled.
  */
 export default function GameShell() {
   const { roomCode } = useParams()
-  const [phaseIndex, setPhaseIndex] = useState(0)
-  const phase = PHASE_ORDER[phaseIndex]
+  const { status, game, roster, me, error } = useGame(roomCode)
 
-  const header = <span className={styles.room}>ROOM {roomCode}</span>
+  if (status === 'loading') {
+    return (
+      <Layout>
+        <Centered>Loading room…</Centered>
+      </Layout>
+    )
+  }
+  if (status === 'not_found') {
+    return (
+      <Layout>
+        <Centered>
+          No room <code>{roomCode?.toUpperCase()}</code>.{' '}
+          <a href="/" className={styles.link}>
+            Back home
+          </a>
+        </Centered>
+      </Layout>
+    )
+  }
+  if (status === 'needs_join') {
+    return <Navigate to={`/join?code=${roomCode.toUpperCase()}`} replace />
+  }
+  if (status === 'error') {
+    return (
+      <Layout>
+        <Centered>⚠ {error}</Centered>
+      </Layout>
+    )
+  }
+
+  const header = (
+    <span className={styles.room}>
+      ROOM {game.room_code} · {PHASE_LABEL[game.phase]}
+    </span>
+  )
 
   return (
     <Layout header={header}>
-      <PhaseRouter phase={phase} />
-
-      {/* Dev-only phase stepper — removed once realtime drives the phase. */}
-      <div className={styles.stepper} role="group" aria-label="dev phase stepper">
-        <button
-          onClick={() => setPhaseIndex((i) => Math.max(0, i - 1))}
-          disabled={phaseIndex === 0}
-        >
-          ◀ prev
-        </button>
-        <span className={styles.count}>
-          {phaseIndex + 1}/{PHASE_ORDER.length}
-        </span>
-        <button
-          onClick={() => setPhaseIndex((i) => Math.min(PHASE_ORDER.length - 1, i + 1))}
-          disabled={phaseIndex === PHASE_ORDER.length - 1}
-        >
-          next ▶
-        </button>
-      </div>
+      <PhaseRouter game={game} roster={roster} me={me} />
     </Layout>
   )
+}
+
+function Centered({ children }) {
+  return <div className={styles.centered}>{children}</div>
 }

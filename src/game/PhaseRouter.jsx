@@ -1,9 +1,9 @@
 import { PHASES, PHASE_LABEL } from './phases'
+import Lobby from './screens/Lobby'
 import styles from './PhaseRouter.module.css'
 
 /**
- * Placeholder screen for a phase. Later slices replace each entry in SCREENS
- * with the real screen component (Lobby, RoleReveal, Playing, …).
+ * Placeholder screen for phases whose real screen lands in a later slice.
  */
 function Placeholder({ phase }) {
   return (
@@ -17,12 +17,11 @@ function Placeholder({ phase }) {
 }
 
 /**
- * Maps each game phase (PRD §4) to the screen that renders it. The GameShell
- * feeds this the live `games.phase`; this is the single switch point so future
- * slices only need to swap a map entry.
+ * Maps each game phase (PRD §4) to the screen that renders it. The single
+ * switch point: future slices swap a placeholder for the real screen.
  */
 const SCREENS = {
-  [PHASES.LOBBY]: Placeholder,
+  [PHASES.LOBBY]: Lobby,
   [PHASES.ROLE_REVEAL]: Placeholder,
   [PHASES.PLAYING]: Placeholder,
   [PHASES.DISCUSSION]: Placeholder,
@@ -30,10 +29,8 @@ const SCREENS = {
   [PHASES.GAME_OVER]: Placeholder,
 }
 
-export default function PhaseRouter({ phase }) {
-  const Screen = SCREENS[phase]
-  if (!Screen) {
-    return <Placeholder phase={PHASES.LOBBY} />
-  }
-  return <Screen phase={phase} />
+export default function PhaseRouter({ game, roster, me }) {
+  const phase = game?.phase ?? PHASES.LOBBY
+  const Screen = SCREENS[phase] ?? Placeholder
+  return <Screen phase={phase} game={game} roster={roster} me={me} />
 }
