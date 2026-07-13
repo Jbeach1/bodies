@@ -30,11 +30,14 @@ create table if not exists public.players (
   name                   text not null,
   join_order             int not null,
   role                   text,               -- killer | town | null (pre-assign)
+  role_confirmed         boolean not null default false, -- CONFIRM IDENTITY ack (slice 03)
   is_alive               boolean not null default true,
   is_host                boolean not null default false,
   spared_this_discussion boolean not null default false,
   created_at             timestamptz not null default now()
 );
+
+alter table public.players add column if not exists role_confirmed boolean not null default false;
 
 create table if not exists public.device_sessions (
   id          uuid primary key default gen_random_uuid(),

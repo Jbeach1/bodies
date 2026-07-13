@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
-import Button from '../../components/Button'
+import Settings from './Settings'
 import styles from './Lobby.module.css'
 
 /**
- * Lobby (PRD §8.3). Live roster + room code + QR. Host sees settings/START in a
- * later slice; for now START is a labeled placeholder so the shell is complete.
+ * Lobby (PRD §8.3). Live roster + room code + QR. Host sees settings + START.
  */
 export default function Lobby({ game, roster, me }) {
   const isHost = me?.is_host
@@ -42,12 +41,7 @@ export default function Lobby({ game, roster, me }) {
       </ul>
 
       {isHost ? (
-        <div className={styles.hostArea}>
-          <Button icon="▶" disabled title="Role assignment lands in slice 03">
-            Initiate
-          </Button>
-          <p className={styles.wait}>Settings &amp; start arrive in slice 03.</p>
-        </div>
+        <Settings game={game} roster={roster} />
       ) : (
         <p className={styles.wait}>Waiting for the host to begin…</p>
       )}

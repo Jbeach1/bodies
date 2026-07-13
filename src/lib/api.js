@@ -76,6 +76,34 @@ export async function heartbeat(playerId) {
   await supabase.rpc('heartbeat', { p_player_id: playerId, device_uuid })
 }
 
+/** Host persists killerCount + blacklist to games.settings (lobby only). */
+export async function updateSettings(gameId, { killerCount, blacklist }) {
+  const { error } = await supabase.rpc('update_settings', {
+    p_game_id: gameId,
+    p_killer_count: killerCount,
+    p_blacklist: blacklist,
+  })
+  if (error) throw error
+}
+
+/** Host START: server-side validated, atomic role assignment. lobby → role_reveal. */
+export async function startGame(gameId) {
+  const { error } = await supabase.rpc('assign_roles', { p_game_id: gameId })
+  if (error) throw error
+}
+
+/** Player acks CONFIRM IDENTITY after peeking their role card. */
+export async function confirmRole(playerId) {
+  const { error } = await supabase.rpc('confirm_role', { p_player_id: playerId })
+  if (error) throw error
+}
+
+/** Host BEGIN: role_reveal → playing (may force before everyone confirms). */
+export async function beginPlaying(gameId) {
+  const { error } = await supabase.rpc('begin_playing', { p_game_id: gameId })
+  if (error) throw error
+}
+
 /**
  * Subscribe to a room's live state: the `games` row (phase/settings/winner) and
  * its `players` roster. Calls onGame(row) and onPlayersChange() on any change.

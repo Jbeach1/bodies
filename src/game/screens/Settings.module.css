@@ -1,0 +1,77 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--hairline);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.stepBtn {
+  width: 2rem;
+  height: 2rem;
+  border: var(--hairline);
+  border-radius: var(--radius);
+  background: var(--bg-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.stepBtn:disabled {
+  opacity: 0.4;
+}
+
+.stepValue {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  min-width: 1.5ch;
+  text-align: center;
+}
+
+.blacklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.blItem {
+  padding: var(--space-1) 0;
+}
+
+.blLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+}
+
+.error {
+  margin: 0;
+  color: var(--red);
+  font-size: 0.85rem;
+}

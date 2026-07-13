@@ -1,0 +1,139 @@
+.reveal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.card {
+  aspect-ratio: 3 / 4;
+  max-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--bg-1);
+  border: var(--hairline);
+  border-radius: var(--radius-lg);
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.card.peeking {
+  border-color: var(--red);
+}
+
+.back {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.backTag {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  letter-spacing: 0.28em;
+  color: var(--text-muted);
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.roleTag {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 2rem;
+  letter-spacing: 0.12em;
+  color: var(--red);
+}
+
+.accomplices {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.accLabel {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.accNames {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.error {
+  margin: 0;
+  color: var(--red);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.hostArea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--hairline);
+}
+
+.readiness {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.readyLabel {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.readyCount {
+  font-family: var(--font-mono);
+  color: var(--red);
+  font-size: 0.9rem;
+}
+
+.readyList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.readyItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-1);
+  border-bottom: var(--hairline);
+  font-size: 0.9rem;
+}
+
+.ok {
+  color: var(--text);
+}
+
+.pending {
+  color: var(--text-muted);
+}
