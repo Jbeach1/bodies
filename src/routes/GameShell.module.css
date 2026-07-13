@@ -1,0 +1,26 @@
+.room {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--red);
+}
+
+.centered {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.centered code {
+  font-family: var(--font-mono);
+  color: var(--red);
+}
+
+.link {
+  color: var(--text);
+  text-decoration: underline;
+}

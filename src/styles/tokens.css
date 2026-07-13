@@ -1,0 +1,43 @@
+/*
+ * Bodies — design tokens (PRD §9.2 / §9.3)
+ * Dark-only v1. Monochrome + a single red accent.
+ * Defined on [data-theme="noir"] so light mode can be added later as a swap.
+ */
+:root,
+[data-theme='noir'] {
+  /* --- Color (§9.2) --- */
+  --bg-0: #0a0a0b; /* base (near-black) */
+  --bg-1: #141416; /* elevated surface */
+  --bg-2: #1e1e22; /* raised / cards */
+  --text: #ececec; /* primary */
+  --text-muted: #8a8a90; /* secondary */
+  --red: #e5484d; /* THE accent — danger / killer / convict / body / beats */
+  --red-dim: #7a2a2e; /* pressed / disabled red */
+  --dead: #5a5a60; /* deceased (desaturated) + strikethrough */
+  --host: #ffffff; /* moderator / authority layer */
+  --line: #2a2a30; /* hairlines / borders */
+
+  /* --- Typography (§9.3) --- */
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Code',
+    'Liberation Mono', monospace;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* --- Spacing / radius / motion --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  --radius: 6px;
+  --radius-lg: 12px;
+
+  --hairline: 1px solid var(--line);
+
+  /* Calm functional motion; beats are handled per-component (§9.4). */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+}
